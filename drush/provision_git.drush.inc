@@ -9,16 +9,6 @@
  * Implementation of hook_drush_command().
  */
 function provision_git_drush_command() {
-  $items['provision-git-pull'] = array(
-    'description' => 'Executes "git pull".',
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-    'options' => array(
-      'reset' => 'Resets any working tree changes that would block a rebase.  USE WITH CAUTION',
-      'repo_path' => 'Optional: force a repository path. Defaults to the site or platform dir.',
-      'force_repo_path_as_toplevel' => 'Stop Git from looking in parent directories. Defaults to FALSE.',
-    ),
-    'aliases' => array('pull'),
-  );
   $items['provision-git-fetch'] = array(
     'description' => 'Executes "git fetch".',
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
@@ -75,18 +65,12 @@ function provision_git_drush_command() {
     'arguments' => array(
       'git_url' => dt('The git repository to clone.'),
       'path' => dt('The location where the git repository will be cloned.'),
-    ),
-  );
-  $items['provision-git-checkout'] = array(
-    'description' => 'Git checkout a branch or tag in a specified location.',
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-    'arguments' => array(
       'git_ref' => dt('Parameter for the git checkout command'),
     ),
-    'options' => array(
-      'new_branch' => "Optional: If the branch doesn't exist, create it. Equivalent to git checkout -b branchname"
-    )
   );
+
+  // Other commands are defined in sub modules.
+
   return $items;
 }
 
@@ -125,13 +109,6 @@ function provision_git_is_repo($repo_path = NULL) {
 }
 
 /**
- * Pre provision-git-pull hook
- */
-function drush_provision_pre_provision_git_pull() {
-  provision_git_is_repo();
-}
-
-/**
  * Pre provision-git-push hook
  */
 function drush_provision_pre_provision_git_push() {
@@ -164,44 +141,6 @@ function drush_provision_pre_provision_git_add() {
  */
 function drush_provision_pre_provision_git_clone() {
   // Nothing to do here.
-}
-
-/**
- * Pre provision-git-checkout hook
- */
-function drush_provision_pre_provision_git_checkout() {
-  provision_git_is_repo();
-}
-
-/**
- * Implements the provision-git-pull command.
- */
-function drush_provision_git_pull() {
-  $repo_path = drush_get_option('repo_path');
-  $target = d()->name;
-
-  // Only git reset --hard if option says so.
-  if (drush_get_option('reset') == TRUE) {
-    provision_backend_invoke($target, 'provision-git-reset');
-  }
-
-  // Execute git pull --rebase
-  // @TODO: make rebase optional as well??  Haven't thought this through yet.
-  if (drush_shell_cd_and_exec($repo_path, 'git pull --rebase')) {
-    drush_log(dt('Git repository !path pulled.', array('!path' => $repo_path)), 'ok');
-    drush_log(implode("\n", drush_shell_exec_output()), 'ok');
-
-    // Submodule in git? lets update those.
-    if (file_exists($repo_path . '/.gitmodules')) {
-      drush_shell_cd_and_exec($repo_path, 'git submodule init');
-      drush_log(implode("\n", drush_shell_exec_output()), 'ok');
-      drush_shell_cd_and_exec($repo_path, 'git submodule update');
-      drush_log(implode("\n", drush_shell_exec_output()), 'ok');
-    }
-  }
-  else {
-    return drush_set_error('DRUSH_PROVISION_GIT_PULL_FAILED', dt("Git pull failed in !path.\nThe specific errors are below:\n!errors", array('!path' => $repo_path, '!errors' => implode("\n", drush_shell_exec_output()))));
-  }
 }
 
 /**
@@ -370,48 +309,6 @@ function drush_provision_git_clone($git_url = '', $path = '', $git_ref = '') {
 }
 
 /**
- * Implements the provision-git_checkout command
- */
-function drush_provision_git_checkout($git_ref = '') {
-
-  // Get URL and path from d()
-  // @TODO: Move to a validate hook.
-  if (!$git_ref) {
-    $git_ref = d()->git_ref;
-  }
-  if (d()->type == 'site') {
-    $path = d()->site_path;
-  }
-  else {
-    $path = d()->root;
-  }
-
-  // Make sure there is a git ref
-  if (empty($git_ref)) {
-    return drush_set_error('DRUSH_PROVISION_GIT_CHECKOUT_FAILED', dt("Git checkout failed: No git_ref specified."));
-  }
-
-  provision_backend_invoke(d()->name, 'provision-git-fetch', array(), array('repo_path' => $path));
-
-  drush_log(dt('Checking out git reference !git_ref', array('!git_ref' => $git_ref), 'ok'));
-
-  $command = "git checkout " . escapeshellarg(trim($git_ref));
-
-  // Try to perform the git checkout.
-  drush_log("Running $command", 'ok');
-  if (drush_shell_cd_and_exec($path, $command)) {
-    // Log the fact that it worked.
-    drush_log(dt('Checkout successful.'), 'ok');
-    drush_log(implode("\n", drush_shell_exec_output()), 'ok');
-
-    _provision_git_update_git_meta_data();
-  } else {
-    // The command failed.
-    return drush_set_error('DRUSH_PROVISION_GIT_CHECKOUT_FAILED', dt("Git checkout failed! \nThe specific errors are below:\n!errors", array('!errors' => implode("\n", drush_shell_exec_output()))));
-  }
-}
-
-/**
  * Implements the provision-git-add command.
  */
 function drush_provision_git_add($path = '') {
@@ -484,7 +381,6 @@ function drush_provision_git_provision_install_validate() {
 function drush_provision_git_post_provision_verify() {
   _provision_git_update_git_meta_data();
 }
-
 
 /**
  * Update the drush context with the git_url and current git_ref.

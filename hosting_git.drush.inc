@@ -13,6 +13,20 @@
  */
 function drush_hosting_git_pre_hosting_task($task) {
   $task = &drush_get_context('HOSTING_TASK');
+  if ($task->task_type == 'git-clone') {
+    if (!empty($task->task_args['git_url'])) {
+      // Pass the argument provision_git expects.
+      $task->args[0] = $task->task_args['git_url'];
+    }
+    if (!empty($task->task_args['path'])) {
+      // Pass the argument provision_git expects.
+      $task->args[1] = $task->task_args['path'];
+    }
+    if (!empty($task->task_args['git_ref'])) {
+      // Pass the option provision_git expects.
+      $task->args[2] = $task->task_args['git_ref'];
+    }
+  }
 
   // Only work on selected task types.
   if (!in_array($task->task_type, array('git-pull', 'git-checkout'))) {
@@ -66,18 +80,6 @@ function hosting_git_drush_context_import($context, &$node) {
     $node->git['repo_url'] = $context->repo_url;
     $node->git['git_ref'] = $context->git_ref;
   }
-}
-
-
-/**
- * Implements hook_post_hosting_TASK_TYPE_task().
- */
-function hosting_git_post_hosting_git_checkout_task($task, $data) {
-  hosting_git_post_hosting_verify_task($task, $data);
-
-  // Save the node, hosting_site_post_hosting_verify_task does that
-  // for a verify task but not for checkout.
-  node_save($task->ref);
 }
 
 /**

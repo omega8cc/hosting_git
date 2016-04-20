@@ -20,16 +20,6 @@ function hosting_git_pull_menu() {
 }
 
 /**
- * Implements drush_hook_post_COMMAND().
- */
-function drush_hosting_git_pull_post_provision_git_pull() {
-  // Re-verify the site, this corrects the file permission when necessary.
-  $options = array();
-  $target = d()->uri;
-  provision_backend_invoke($target, 'provision-verify', array(), $options);
-}
-
-/**
  * Implements hook_hosting_tasks().
  */
 function hosting_git_pull_hosting_tasks() {
@@ -56,6 +46,11 @@ function hosting_git_pull_hosting_tasks() {
  * Access function for the pull task on sites.
  */
 function hosting_git_pull_access_site_pull($node) {
+  // Only consider doing this if we have a git repo.
+  if (empty($node->git['repo_url'])) {
+    return FALSE;
+  }
+
   if (user_access("create git-pull task")
       && node_access('view', $node)
       && isset($node->git['pull_method']) && $node->git['pull_method'] > 0) {
@@ -68,6 +63,11 @@ function hosting_git_pull_access_site_pull($node) {
  * Access function for the pull task on platforms.
  */
 function hosting_git_pull_access_platform_pull($node) {
+  // Only consider doing this if we have a git repo.
+  if (empty($node->git['repo_url'])) {
+    return FALSE;
+  }
+
   if (user_access("create platform git-pull task")
       && node_access('view', $node)
       && isset($node->git['pull_method']) && $node->git['pull_method'] > 0) {
@@ -162,6 +162,12 @@ function hosting_git_pull_form_alter(&$form, &$form_state, $form_id) {
         '#attributes' => array(
           'onclick' => 'this.select()',
         ),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="pull_method"]' => array('value' => HOSTING_GIT_PULL_CALLBACK),
+          ),
+        ),
+
       );
     }
   }
