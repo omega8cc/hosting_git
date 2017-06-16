@@ -60,6 +60,7 @@ function hosting_git_hosting_platform_context_options(&$task) {
   // If we're actually provisioning from Git, populate real data.
   if (!empty($task->ref->git['repo_url'])) {
     $task->context_options['repo_url'] = $task->ref->git['repo_url'];
+    $task->context_options['repo_path'] = $task->ref->git['repo_path'];
     $task->context_options['deploy_from_git'] = TRUE;
     $task->context_options['git_ref'] = $task->ref->git['git_ref'];
   }
@@ -79,6 +80,7 @@ function hosting_git_drush_context_import($context, &$node) {
   if (in_array($context->type, array('site', 'platform')) && $context->deploy_from_git) {
     $node->git['repo_url'] = $context->repo_url;
     $node->git['git_ref'] = $context->git_ref;
+    $node->git['repo_path'] = $context->repo_path;
   }
 }
 
@@ -95,5 +97,9 @@ function hosting_git_post_hosting_verify_task($task, $data) {
 
   if (isset($context['git_ref'])) {
     $node->git['git_ref'] = $context['git_ref'];
+  }
+
+  if (isset($context['repo_path'])) {
+    $node->git['repo_path'] = $context['repo_path'];
   }
 }

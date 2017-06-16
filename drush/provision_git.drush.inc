@@ -76,8 +76,15 @@ function provision_git_drush_command() {
 
 /**
  * Helper for verifying the chosen path is a git repo.
+ *
+ * @param bool $set_error
+ *   Use drush_set_error when it's not a repo, default to TRUE.
+ *   Set to FALSE to silently check if a directory is a Git repo.
+ *
+ * @return bool
+ *   TRUE if it's a functional Git repository, FALSE otherwise.
  */
-function provision_git_is_repo($repo_path = NULL) {
+function provision_git_is_repo($repo_path = NULL, $set_error = TRUE) {
   // If no path specified, use the site or platform path of the alias.
   if (!$repo_path) {
     $repo_path = drush_get_option('repo_path');
@@ -89,9 +96,11 @@ function provision_git_is_repo($repo_path = NULL) {
       $repo_path = d()->platform->root ? d()->platform->root : d()->root;
     }
   }
-  // If shell returns False, this is not a git repo
-  if (!drush_shell_cd_and_exec($repo_path, 'git status')) {
-    drush_set_error('DRUSH_PROVISION_GIT_PULL_FAILED', dt("Git repository not found in: !path", array('!path' => $repo_path)));
+  // If repo_path does not exist, or git status returns False, this is not a git repo
+  if (!file_exists($repo_path) || !drush_shell_cd_and_exec($repo_path, 'git status')) {
+    if ($set_error) {
+      drush_set_error('DRUSH_PROVISION_GIT_PULL_FAILED', dt("Git repository not found in: !path", array('!path' => $repo_path)));
+    }
     return FALSE;
   } else {
     // Find the toplevel directory for this git repository
@@ -99,7 +108,9 @@ function provision_git_is_repo($repo_path = NULL) {
       $top_repo_path = implode("\n", drush_shell_exec_output());
     }
     if (drush_get_option('force_repo_path_as_toplevel', FALSE) && realpath($repo_path) != $top_repo_path) {
-      drush_set_error('DRUSH_PROVISION_GIT_PULL_FAILED', dt("Path !path is not the toplevel dir of this Git repository.", array('!path' => $repo_path)));
+      if ($set_error) {
+        drush_set_error('DRUSH_PROVISION_GIT_PULL_FAILED', dt("Path !path is not the toplevel dir of this Git repository.", array('!path' => $repo_path)));
+      }
       return FALSE;
     }
     drush_log(dt("Git repository found in !path", array('!path' => $top_repo_path)), 'ok');
@@ -273,7 +284,7 @@ function drush_provision_git_clone($git_url = '', $path = '', $git_ref = '') {
         break;
       case 'platform':
       default:
-        $path = d()->root;
+        $path = d()->repo_path;
         break;
     }
   }
@@ -358,6 +369,12 @@ function drush_provision_git_provision_verify_validate() {
       provision_backend_invoke(d()->name, 'provision-git-clone');
     }
   }
+  else {
+    // Check to see if we can puick up on existing Git info.
+    if (provision_git_is_repo(NULL, FALSE)) {
+      _provision_git_update_git_meta_data();
+    }
+  }
 }
 
 /**
@@ -383,10 +400,23 @@ function drush_provision_git_post_provision_verify() {
 }
 
 /**
+ * Implements drush_hook_post_COMMAND() for provision-delete command.
+ *
+ * If repo path is different from root, delete it.
+ */
+function drush_provision_git_post_provision_delete() {
+  // If platform has a repo path that is not the root, it must be deleted as well.
+  if (d()->type =='platform' && d()->repo_path != d()->root) {
+    drush_log('Deleting repo path at ' . d()->repo_path, 'ok');
+    _provision_recursive_delete(d()->repo_path);
+  }
+}
+
+/**
  * Update the drush context with the git_url and current git_ref.
  */
 function _provision_git_update_git_meta_data() {
-  if (in_array(d()->type, array('site', 'platform')) && d()->deploy_from_git) {
+  if (in_array(d()->type, array('site', 'platform'))) {
 
     switch (d()->type) {
       case 'site':
