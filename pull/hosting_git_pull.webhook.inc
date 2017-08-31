@@ -18,16 +18,16 @@ function hosting_git_pull_callback($name, $hash) {
 
   // Make sure we got the node.
   if (!$node) {
-    $message = "Project $name_clean not found.";
+    $message = "No node found with the name '$name_clean'.";
   }
   // Make sure the security code is valid.
   elseif (_hosting_git_pull_webhook_hash_create($node) != $hash) {
     $message = "Security code $hash is not valid!";
     $status = HOSTING_GIT_WEBHOOK_STATUS_INVALID_CODE;
   }
-  // Make sure the project has pull callback enabled.
+  // Make sure the node has pull callback enabled.
   elseif ($node->git['pull_method'] != HOSTING_GIT_PULL_CALLBACK) {
-    $message = "Project $name_clean is NOT configured to use Pull Code URL callback!";
+    $message = "Node $name_clean is NOT configured to use Pull Code URL callback!";
   }
   // Make sure the client's IP address is on the list.
   elseif (!hosting_git_pull_ip_match(ip_address(), $allowed_ips)) {
@@ -66,12 +66,21 @@ function hosting_git_pull_callback($name, $hash) {
 
 
     if ($status == HOSTING_GIT_WEBHOOK_STATUS_OK) {
-      $message = "Commit Received! Invoked by " . ip_address();
+      $message = "Webhook Received! Invoked by " . ip_address();
       $args = array('reset_hard' => TRUE);
-      hosting_add_task($node->nid, 'git-pull', $args);
+
+      // @TODO: Determine if environment is on a branch. Pull only works when on a branch.
+      $task = hosting_add_task($node->nid, 'git-pull', $args);
+
+      if ($task->nid) {
+        $message .= " Task started: " . url("node/{$task->nid}", array('absolute' => TRUE));
+      }
+      else {
+        $message .= " ERROR! Unable to save task!";
+      }
     }
     elseif ($status == HOSTING_GIT_WEBHOOK_STATUS_OTHER_REF) {
-      $message = "Commit for OTHER branch Received! Ignoring";
+      $message = "Webhook for OTHER branch Received! Ignoring";
     }
   }
 
@@ -94,6 +103,7 @@ function hosting_git_pull_callback($name, $hash) {
   // Output a message, no matter what.
   watchdog('hosting_git_pull', $message, array(), WATCHDOG_INFO);
   print $message;
+  print "\n\n";
 
   // Save a variable to help when using the settings page.
   variable_set('hosting_git_pull_webhook_last_ip', ip_address());
@@ -102,7 +112,7 @@ function hosting_git_pull_callback($name, $hash) {
 /**
  * Check whether a given ip address matches a list of allowed ip addresses.
  *
- * A CIDR is allowed.
+ * A CIDR is allowed. Returns TRUE if $list is empty.
  *
  * @param string $ip
  *   The ip addy to test.
@@ -110,6 +120,9 @@ function hosting_git_pull_callback($name, $hash) {
  *   The list to test against.
  */
 function hosting_git_pull_ip_match($ip, $list) {
+  if (empty(array_filter($list))) {
+    return TRUE;
+  }
   foreach ($list as $cidr) {
     if (trim($ip) === trim($cidr)) {
       return TRUE;
@@ -127,24 +140,4 @@ function hosting_git_pull_ip_match($ip, $list) {
     }
   }
   return FALSE;
-}
-
-/**
- * Create the full URL that is displayed in the node view.
- *
- * This URL can be given to the GitHub WebHook to invoke a pull after a commit.
- */
-function _hosting_git_pull_callback_url($node) {
-  // TODO The second parameter to this function call should be an array.
-  return url(HOSTING_GIT_WEBHOOK_CALLBACK_URL
-    . '/' . $node->hosting_name
-    . '/' . _hosting_git_pull_webhook_hash_create($node),
-    array('absolute' => TRUE));
-}
-
-/**
- * Create a security hash code based on the node.
- */
-function _hosting_git_pull_webhook_hash_create($node) {
-  return md5($node->hosting_name . $node->nid);
 }

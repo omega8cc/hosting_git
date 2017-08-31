@@ -1,4 +1,13 @@
 <?php
+/**
+ * @file hosting_git_pull.module
+ *
+ * Provides a Hosting Queue and a URL callback for remote services to ping, in
+ * order to trigger a Pull Code task.
+ *
+ * Used to keep a dev server up to date with the commits of projects.
+ *
+ */
 
 define('HOSTING_GIT_PULL_DISABLED', 0);
 define('HOSTING_GIT_PULL_QUEUE', 1);
@@ -132,42 +141,40 @@ function hosting_git_pull_form_alter(&$form, &$form_state, $form_id) {
     // Get node object.
     $node = $form['#node'];
 
+    // Only add git info if allowed by settings.
+    if (!variable_get("hosting_git_allow_deploy_" . $node->type, TRUE)) {
+      return;
+    }
+
     // Bail out early of the hosting_git module has not already added it's fieldset.
     if (!isset($form['git'])) {
       return;
     }
 
+    $options = hosting_git_pull_method_options();
+
     $form['git']['pull_method'] = array(
-      '#title' => t('Git pull method'),
+      '#title' => t('Git Pull Method'),
       '#type' => 'radios',
-      '#description' => t('Choose the method by which "Git Pull" can be run. See !link to configure the queue. See !link2 to configure URL Callback.', array(
-        '!link' => l(t('Hosting > Queues'), 'admin/hosting/queues'),
-        '!link2' => l(t('Hosting > Git'), 'admin/hosting/git'),
-      )),
       '#default_value' => isset($node->git['pull_method']) ? $node->git['pull_method'] : HOSTING_GIT_PULL_DISABLED,
-      '#options' => array(
-        HOSTING_GIT_PULL_DISABLED => t('Pull disabled.'),
-        HOSTING_GIT_PULL_MANUAL => t('Pull on "Git Pull" task.'),
-        HOSTING_GIT_PULL_QUEUE => t('Pull on queue (i.e. every minute).'),
-        HOSTING_GIT_PULL_CALLBACK => t('Pull on URL Callback (i.e. GitHub Webhook)'),
-      ),
+      '#options' => $options,
     );
-    if (_hosting_git_site_or_platform_enabled($node)) {
-      module_load_include('inc', 'hosting_git_pull', 'hosting_git_pull.webhook');
+    if (!empty($node->nid)) {
       $form['git']['pull_url'] = array(
         '#type' => 'textfield',
-        '#title' => t('Pull Trigger URL'),
+        '#title' => t('Webhook URL'),
         '#value' => _hosting_git_pull_callback_url($node),
-        '#description' => t('Configure your repo to hit this URL when it receives a commit.'),
+        '#description' => t('Requests to this URL will trigger a "Git Pull" task for !link. Configure your repo to hit this URL when it receives a commit.', array(
+          '!link' => l(t('this platform'), "node/{$node->nid}"),
+        )),
         '#attributes' => array(
           'onclick' => 'this.select()',
         ),
         '#states' => array(
           'visible' => array(
-            ':input[name="pull_method"]' => array('value' => HOSTING_GIT_PULL_CALLBACK),
+            ':input[name="git[pull_method]"]' => array('value' => HOSTING_GIT_PULL_CALLBACK),
           ),
         ),
-
       );
     }
   }
@@ -200,6 +207,8 @@ function hosting_git_pull_form_alter(&$form, &$form_state, $form_id) {
     else {
       $items[] = t('No requests ever detected.  If you add the trigger URL for a project to your git repo host, the IP will be logged and displayed here.');
     }
+
+    $items[] = t('Leave empty to allow access from any IP address.');
     $form['pullhook']['hosting_git_pull_webhook_ip_acl']['#description'] = theme('item_list', array('items' => $items));
 
     $form['#submit'][] = 'hosting_git_pull_settings_form_submit';
@@ -208,6 +217,40 @@ function hosting_git_pull_form_alter(&$form, &$form_state, $form_id) {
 
 function hosting_git_pull_settings_form_submit(&$form, &$form_state) {
   variable_set('hosting_git_pull_webhook_ip_acl', $form_state['values']['hosting_git_pull_webhook_ip_acl']);
+}
+
+/**
+ * Helper to return options list for Hosting Git Pull Method.
+ * @return array
+ */
+function hosting_git_pull_method_options() {
+
+  // DISABLED
+  $options[HOSTING_GIT_PULL_DISABLED] = t('Disabled') . '<div class="help-block">' . t('Running Git Pull is not allowed using the dashboard.') . '</div>';
+
+  // MANUAL
+  $options[HOSTING_GIT_PULL_MANUAL] = t('Manual Git Pull') . '<div class="help-block">' . t('Use the dashboard to run a "Git Pull" task.') . '</div>';
+
+  // QUEUED
+  $queues = hosting_get_queues();
+  $options[HOSTING_GIT_PULL_QUEUE] = t('Queued Git Pull');
+  $queued_help = t('Pull code to the server every @freq. Use only if repository webhooks are not available.', array(
+    '@freq' => format_interval($queues['pull']['frequency'], 1)
+  ));
+  if (user_access('administer hosting queues')) {
+    $queued_help .= ' ' . l(t("Configure Queues"), 'admin/hosting/queues', array('attributes' => array('target' => '_blank')));
+  }
+  $options[HOSTING_GIT_PULL_QUEUE] .= '<div class="help-block">' . $queued_help . '</div>';
+
+  // WEBHOOK
+  $options[HOSTING_GIT_PULL_CALLBACK] = t('Automatic Git Pull');
+
+  $webhook_help = t('Recommended. Pull code to the server as soon as it is pushed to your repository by setting up a webhook with your git repository host.');
+  if (user_access('administer hosting queues')) {
+    $webhook_help .= ' ' . l(t("Configure Webhooks"), 'admin/hosting/git', array('attributes' => array('target' => '_blank')));
+  }
+  $options[HOSTING_GIT_PULL_CALLBACK] .= '<div class="help-block">' . $webhook_help . '</div>';
+  return $options;
 }
 
 /**
@@ -294,4 +337,25 @@ function _hosting_git_pullqueue_get_nodes() {
           . "ORDER BY last_pull ASC ",
           array(':pull_method' => HOSTING_GIT_PULL_QUEUE));
   return $result->fetchField();
+}
+
+/**
+ * Create a security hash code based on the node.
+ */
+function _hosting_git_pull_webhook_hash_create($node) {
+  return md5($node->hosting_name . $node->nid);
+}
+
+/**
+ * Create the full URL that is displayed in the node view.
+ *
+ * This URL can be given to the GitHub WebHook to invoke a pull after a commit.
+ */
+function _hosting_git_pull_callback_url($node) {
+  if (isset($node->hosting_name)) {
+    return url(HOSTING_GIT_WEBHOOK_CALLBACK_URL
+      . '/' . $node->hosting_name
+      . '/' . _hosting_git_pull_webhook_hash_create($node),
+      array('absolute' => TRUE));
+  }
 }
