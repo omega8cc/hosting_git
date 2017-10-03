@@ -100,10 +100,12 @@ function provision_git_is_repo($repo_path = NULL, $set_error = TRUE) {
   // Do not allow /var/aegir to be repo_path.
   // See https://www.drupal.org/node/2893588
   if ($repo_path == '/var/aegir') {
-    drush_log(dt('Option "repo_path" cannot be "/var/aegir". Setting repo_path to NULL.'), 'warning');
     $repo_path = NULL;
     drush_set_option('repo_path', $repo_path);
-    return FALSE;
+    return drush_set_error('PROVISION_GIT_ERROR', dt('Warning: The "repo_path" for this !type is set to "/var/aegir". This is not allowed. Please manually edit the drush alias file in /var/aegir/.drush/!file.alias.drushrc.php.  Option repo_path has been unset.', array(
+      '!file' => ltrim(d()->name, '@'),
+      '!type' => d()->type,
+    )));
   }
 
   // If repo_path does not exist, or git status returns False, this is not a git repo
@@ -190,7 +192,7 @@ function drush_provision_git_push() {
   $repo_path = drush_get_option('repo_path');
   $target = d()->name;
 
-  //Execute git push
+  // Execute git push
   if (drush_shell_cd_and_exec($repo_path, 'git push')) {
     drush_log(dt('Git repository pushed.'), 'ok');
     drush_log(implode("\n", drush_shell_exec_output()), 'ok');
@@ -210,8 +212,8 @@ function drush_provision_git_commit() {
   //Generate commit message
   $message = array();
   $message[] = "Provision Git Commit: $target";
-  $message[] = str_repeat('=', strlen($message[0]));
   if (drush_get_option('message')) {
+    $message[] = str_repeat('=', strlen($message[0]));
     $message[] = drush_get_option('message');
   }
   $message = implode("\n", $message);
