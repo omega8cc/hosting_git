@@ -419,9 +419,10 @@ function drush_provision_git_post_provision_verify() {
 function drush_provision_git_post_provision_delete() {
   // If platform has a repo path that is not the root, it must be deleted as well.
   if (d()->type =='platform' && !empty(d()->repo_path) && d()->repo_path != d()->root) {
-    //drush_log('Deleting repo path at ' . d()->repo_path, 'ok');
-    //_provision_recursive_delete(d()->repo_path);
-    drush_log('NOT deleteing ' . d()->repo_path . ' See https://www.drupal.org/node/2893588', 'ok');
+    drush_log(dt('Deleting repo path at %path', array(
+      '%path' => d()->repo_path
+    )), 'ok');
+    _provision_recursive_delete(d()->repo_path);
   }
 }
 
@@ -444,6 +445,8 @@ function _provision_git_update_git_meta_data() {
 
     // If the repo path doesn't even contain a git config, do not update metadata.
     if (!file_exists($repo_path . '/.git/config')) {
+      drush_set_option('repo_url', '');
+      drush_set_option('git_ref', '');
       return;
     }
 
@@ -451,7 +454,7 @@ function _provision_git_update_git_meta_data() {
       $repo_url = implode("\n", drush_shell_exec_output());
       drush_set_option('repo_url', $repo_url);
     }
-    if (drush_shell_cd_and_exec($repo_path, 'git rev-parse --abbrev-ref HEAD')) {
+    if (drush_shell_cd_and_exec($repo_path, 'git describe --tags --exact-match 2> /dev/null || git symbolic-ref -q HEAD 2> /dev/null')) {
       $git_ref = implode("\n", drush_shell_exec_output());
       drush_set_option('git_ref', $git_ref);
     }
