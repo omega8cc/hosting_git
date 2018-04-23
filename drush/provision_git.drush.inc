@@ -454,8 +454,8 @@ function _provision_git_update_git_meta_data() {
       $repo_url = implode("\n", drush_shell_exec_output());
       drush_set_option('repo_url', $repo_url);
     }
-    if (drush_shell_cd_and_exec($repo_path, 'git describe --tags --exact-match 2> /dev/null || git symbolic-ref -q HEAD 2> /dev/null')) {
-      $git_ref = implode("\n", drush_shell_exec_output());
+    if (drush_shell_cd_and_exec($repo_path, 'git describe --tags --exact-match || git symbolic-ref -q HEAD')) {
+      $git_ref = trim(str_replace('refs/heads/', '',drush_shell_exec_output()));;
       drush_set_option('git_ref', $git_ref);
     }
   }
