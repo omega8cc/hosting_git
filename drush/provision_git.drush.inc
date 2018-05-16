@@ -455,7 +455,8 @@ function _provision_git_update_git_meta_data() {
       drush_set_option('repo_url', $repo_url);
     }
     if (drush_shell_cd_and_exec($repo_path, 'git describe --tags --exact-match || git symbolic-ref -q HEAD')) {
-      $git_ref = trim(str_replace('refs/heads/', '',drush_shell_exec_output()));;
+      $temp_git_ref = str_replace('refs/heads/', '',drush_shell_exec_output());
+      $git_ref = (!empty($temp_git_ref) && is_string($temp_git_ref)) ? trim($temp_git_ref) : $temp_git_ref;
       drush_set_option('git_ref', $git_ref);
     }
   }
