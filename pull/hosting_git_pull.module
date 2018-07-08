@@ -126,7 +126,7 @@ function hosting_git_pull_hosting_queues() {
     'name' => t('Pull queue'),
     'description' => t('Run git pull on nodes configured to do so.'),
     'total_items' => _hosting_git_pullqueue_get_nodes(),
-    'frequency' => strtotime("1 minute", 0),
+    'frequency' => variable_get('hosting_git_pull_hosting_queues_frequency', strtotime("1 minute", 0)),
     'singular' => t('node'),
     'plural' => t('nodes'),
   );
