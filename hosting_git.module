@@ -78,7 +78,8 @@ function hosting_git_form_alter(&$form, &$form_state, $form_id) {
       '#weight' => -1,
     );
 
-    if (!isset($node->nid) || (!$node->verified && !isset($node->git['repo_url']))) {
+    // If node has not been verified (or created) yet, allow entering git repo information.
+    if (!$node->verified) {
       $form['git']['repo_url'] = array(
         '#type' => 'textfield',
         '#title' => 'Repository URL',
