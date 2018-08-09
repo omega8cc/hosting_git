@@ -320,15 +320,7 @@ function drush_provision_git_clone($git_url = '', $path = '', $git_ref = '') {
 
   // Try to perform the git clone
   drush_log("Running $command", 'ok');
-  if (drush_shell_exec($command)) {
-    // Log the fact that it worked
-    drush_log(dt('Clone successful.'), 'ok');
-    drush_log(implode("\n", drush_shell_exec_output()), 'ok');
-  }
-  else {
-    // The command failed
-    return drush_set_error('DRUSH_PROVISION_GIT_CLONE_FAILED', dt("Git clone failed! \nThe specific errors are below:\n!errors", array('!errors' => implode("\n", drush_shell_exec_output()))));
-  }
+  provision_process($command);
 }
 
 /**
