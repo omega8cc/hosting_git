@@ -319,7 +319,6 @@ function drush_provision_git_clone($git_url = '', $path = '', $git_ref = '') {
   }
 
   // Try to perform the git clone
-  drush_log("Running $command", 'ok');
   provision_process($command);
 }
 
