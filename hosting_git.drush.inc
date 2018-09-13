@@ -38,13 +38,13 @@ function drush_hosting_git_pre_hosting_task($task) {
       // Pass the option provision_git expects.
       $task->options['reset'] = TRUE;
     }
-    if (!empty($task->task_args['checkout_git_ref'])) {
+    if (!empty($task->task_args['git_ref'])) {
       // Pass the option provision_git expects.
-      $task->options['git_ref'] = $task->task_args['checkout_git_ref'];
+      $task->args[] = $task->task_args['git_ref'];
     }
-    if (!empty($task->task_args['git_tag'])) {
+    if (!empty($task->task_args['branch'])) {
       // Pass the option provision_git expects.
-      $task->args[] = $task->task_args['git_tag'];
+      $task->options['branch'] = 1;
     }
     if ($task->task_args['push']) {
       // Pass the option provision_git expects.

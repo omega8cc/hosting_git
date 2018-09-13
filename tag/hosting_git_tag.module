@@ -59,9 +59,7 @@ function hosting_git_tag_permission() {
  */
 function hosting_task_git_tag_form($node) {
 
-  drupal_set_title(t('Create a Git Tag'));
-
-  $form['git_tag'] = array(
+  $form['git_ref'] = array(
     '#title' => t('Tag'),
     '#description' => t("The name to give the tag."),
     '#type' => 'textfield',
@@ -87,7 +85,7 @@ function hosting_task_git_tag_form($node) {
 
   $form['checkout'] = array(
     '#title' => t('Checkout Tag'),
-    '#description' => t("When done creating the tag, check it out so the repository stays on that tag."),
+    '#description' => t("When done creating the tag, check it out so the code stays at this tag."),
     '#type' => 'checkbox',
     '#weight' => 4,
     '#default_value' => TRUE,
