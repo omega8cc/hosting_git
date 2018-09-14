@@ -29,7 +29,12 @@ function drush_hosting_git_pre_hosting_task($task) {
   }
 
   // Only work on selected task types.
-  if (!in_array($task->task_type, array('git-pull', 'git-checkout', 'git-tag'))) {
+  if (!in_array($task->task_type, array(
+    'git-pull',
+    'git-checkout',
+    'git-tag',
+    'features_update_all'
+  ))) {
     return;
   }
 
@@ -53,6 +58,15 @@ function drush_hosting_git_pre_hosting_task($task) {
     if ($task->task_args['checkout']) {
       // Pass the option provision_git expects.
       $task->options['checkout'] = TRUE;
+    }
+    if ($task->task_args['commit']) {
+      $task->options['commit'] = $task->task_args['commit'];
+    }
+    if ($task->task_args['message']) {
+      $task->options['message'] = $task->task_args['message'];
+    }
+    if ($task->task_args['push']) {
+      $task->options['push'] = $task->task_args['push'];
     }
   }
 

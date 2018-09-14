@@ -141,6 +141,51 @@ function hosting_git_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter()
+ *
+ * @param $form
+ * @param $form_state
+ */
+function hosting_git_form_hosting_task_confirm_form_alter(&$form, &$form_state) {
+  switch ($form['task']['#value']) {
+
+    case 'features_update_all':
+
+      $form['parameters']['commit'] = array(
+        '#title' => t('Commit to git.'),
+        '#description' => t('Commit all changes to git, once the features update is complete.'),
+        '#type' => 'checkbox',
+        '#default_value' => 0,
+      );
+      $form['parameters']['message'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Git Commit Message'),
+        '#description' => t('Enter a message to use as the git commit message.'),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="parameters[commit]"]' => array(
+              'checked' => TRUE,
+            ),
+          ),
+        )
+      );
+      $form['parameters']['push'] = array(
+        '#title' => t('Push to Remote'),
+        '#type' => 'checkbox',
+        '#default_value' => 0,
+        '#description' => t('After updating and committing, push the changes to the git remote.'),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="parameters[commit]"]' => array(
+              'checked' => TRUE,
+            ),
+          ),
+        )
+      );
+      break;
+  }
+}
 
 /**
  * Implements hook_node_submit().
