@@ -70,6 +70,6 @@ function drush_provision_git_checkout($git_ref) {
   _provision_git_update_git_meta_data();
 
   if (drush_get_option('push')) {
-    provision_process("git push origin $git_ref_arg", $path);
+    provision_process("git push --set-upstream origin $git_ref_arg", $path);
   }
 }

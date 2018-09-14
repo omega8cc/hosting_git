@@ -28,16 +28,6 @@ function drush_hosting_git_pre_hosting_task($task) {
     }
   }
 
-  // Only work on selected task types.
-  if (!in_array($task->task_type, array(
-    'git-pull',
-    'git-checkout',
-    'git-tag',
-    'features_update_all'
-  ))) {
-    return;
-  }
-
   if (!empty($task->task_args)) {
     if ($task->task_args['reset_hard'] == TRUE) {
       // Pass the option provision_git expects.
@@ -67,6 +57,15 @@ function drush_hosting_git_pre_hosting_task($task) {
     }
     if ($task->task_args['push']) {
       $task->options['push'] = $task->task_args['push'];
+    }
+    if ($task->task_args['name']) {
+      $task->options['name'] = $task->task_args['name'];
+    }
+    if ($task->task_args['mail`']) {
+      $task->options['mail'] = $task->task_args['mail'];
+    }
+    if ($task->task_args['files']) {
+      $task->options['files'] = $task->task_args['files'];
     }
   }
 

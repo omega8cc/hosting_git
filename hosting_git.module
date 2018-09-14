@@ -150,6 +150,10 @@ function hosting_git_form_alter(&$form, &$form_state, $form_id) {
 function hosting_git_form_hosting_task_confirm_form_alter(&$form, &$form_state) {
   switch ($form['task']['#value']) {
 
+    case "git-commit":
+      drupal_set_title(t('Commit Changes'));
+      break;
+
     case 'features_update_all':
 
       $form['parameters']['commit'] = array(
@@ -162,6 +166,20 @@ function hosting_git_form_hosting_task_confirm_form_alter(&$form, &$form_state) 
         '#type' => 'textarea',
         '#title' => t('Git Commit Message'),
         '#description' => t('Enter a message to use as the git commit message.'),
+        '#rows' => 2,
+        '#states' => array(
+          'visible' => array(
+            ':input[name="parameters[commit]"]' => array(
+              'checked' => TRUE,
+            ),
+          ),
+        )
+      );
+      $form['parameters']['files'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Files to Commit'),
+        '#description' => t('All files in this folder will all be added and committed. If left blank, only modified files will be committed.'),
+        '#default_value' => 'sites/all/modules',
         '#states' => array(
           'visible' => array(
             ':input[name="parameters[commit]"]' => array(
@@ -172,9 +190,9 @@ function hosting_git_form_hosting_task_confirm_form_alter(&$form, &$form_state) 
       );
       $form['parameters']['push'] = array(
         '#title' => t('Push to Remote'),
+        '#description' => t('After updating and committing, push the changes to the git remote.'),
         '#type' => 'checkbox',
         '#default_value' => 0,
-        '#description' => t('After updating and committing, push the changes to the git remote.'),
         '#states' => array(
           'visible' => array(
             ':input[name="parameters[commit]"]' => array(
@@ -182,6 +200,17 @@ function hosting_git_form_hosting_task_confirm_form_alter(&$form, &$form_state) 
             ),
           ),
         )
+      );
+
+      // Save mail and name as values to pass to the git commit.
+      global $user;
+      $form['parameters']['name'] = array(
+        '#type' => 'value',
+        '#value' => $user->name,
+      );
+      $form['parameters']['mail'] = array(
+        '#type' => 'value',
+        '#value' => $user->mail,
       );
       break;
   }
