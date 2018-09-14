@@ -272,7 +272,7 @@ function drush_provision_git_commit() {
   }
 
   // Make commit using environment variables for NAME and EMAIL, if specified.
-  $env = [];
+  $env = array();
   if (!empty($name) || !empty($mail)) {
     $message[] = str_repeat('=', $length);
     $message[] = "Committed by user $name <$mail>";
