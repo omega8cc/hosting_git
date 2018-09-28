@@ -304,7 +304,7 @@ function drush_provision_git_commit() {
   $output = provision_process("git commit -m {$message}", $git_path, 'Committing changes', $env, TRUE, NULL, FALSE);
 
   $process = drush_get_context('provision_process_result');
-  if (!$process->getExitCode()) {
+  if ($process->getExitCode() != 0) {
     $comments = 0;
     $lines = 0;
     $lines_array = explode("\n", $output);
