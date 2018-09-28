@@ -309,7 +309,7 @@ function drush_provision_git_commit() {
     $lines = 0;
     $lines_array = explode("\n", $output);
     foreach ($lines_array as $line) {
-      if ($line[0] == '#') {
+      if (strpos($line, '#') === 0) {
         $comments++;
       }
       else {
