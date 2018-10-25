@@ -73,3 +73,12 @@ function drush_provision_git_checkout($git_ref) {
     provision_process("git push --set-upstream origin $git_ref_arg", $path);
   }
 }
+
+/**
+ * Implements hook_post_hosting_TASK_TYPE_task().
+ *
+ * After checkout, run a full hostmaster verify task to ensure git metadata is saved.
+ */
+function hosting_git_post_hosting_git_checkout_task($task, $data) {
+  _hosting_git_verify_site_platform($task);
+}

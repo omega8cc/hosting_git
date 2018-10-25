@@ -127,11 +127,9 @@ function hosting_git_post_hosting_verify_task($task, $data) {
 }
 
 /**
- * Implements hook_post_hosting_TASK_TYPE_task().
- *
- * After checkout, run a full hostmaster verify task to ensure git metadata is saved.
+ * Based on the current hosting task, run verify on both site ans platform.
  */
-function hosting_git_post_hosting_git_checkout_task($task, $data) {
+function _hosting_git_verify_site_platform($task) {
   if ($task->ref->type == 'platform') {
     hosting_add_task($task->rid, 'verify');
   }

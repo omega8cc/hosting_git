@@ -57,12 +57,12 @@ function drush_provision_git_pull() {
     return drush_set_error('DRUSH_PROVISION_GIT_PULL_FAILED', dt("Git pull failed in !path.\nThe specific errors are below:\n!errors", array('!path' => $repo_path, '!errors' => implode("\n", drush_shell_exec_output()))));
   }
 }
+
 /**
- * Implements drush_hook_post_COMMAND().
+ * Implements hook_post_hosting_TASK_TYPE_task().
+ *
+ * After pull, run a full hostmaster verify task to ensure git metadata is saved.
  */
-function drush_provision_git_pull_post_provision_git_pull() {
-  // Re-verify the site, this corrects the file permission when necessary.
-  $options = array();
-  $target = d()->uri;
-  provision_backend_invoke($target, 'provision-verify', array(), $options);
+function hosting_git_post_hosting_git_pull_task($task, $data) {
+  _hosting_git_verify_site_platform($task);
 }
