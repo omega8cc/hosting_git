@@ -41,10 +41,6 @@ function drush_hosting_git_pre_hosting_task($task) {
       // Pass the option provision_git expects.
       $task->options['branch'] = 1;
     }
-    if ($task->task_args['push']) {
-      // Pass the option provision_git expects.
-      $task->options['push'] = TRUE;
-    }
     if ($task->task_args['checkout']) {
       // Pass the option provision_git expects.
       $task->options['checkout'] = TRUE;
