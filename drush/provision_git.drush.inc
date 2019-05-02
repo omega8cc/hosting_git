@@ -439,8 +439,7 @@ function drush_provision_git_provision_verify_validate() {
       case 'platform':
       default:
         $context_type = 'Platform';
-        $repo_path = d()->root;
-        $path_exists = provision_file()->exists(d()->root)->status();
+        $path_exists = provision_file()->exists(d()->repo_path)->status();
         break;
     }
     // If the platform path doesn't exist, we will clone it.
