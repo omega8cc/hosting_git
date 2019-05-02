@@ -429,7 +429,6 @@ function drush_provision_git_provision_verify_validate() {
     switch (d()->type) {
       case 'site':
         $context_type = 'Site';
-        $repo_path = d()->site_path;
         $path_exists = provision_file()->exists(d()->site_path)->status();
         // If there's an issue with the site git repo, we end up doing a
         // checkout on the platform, if we aren't careful.
