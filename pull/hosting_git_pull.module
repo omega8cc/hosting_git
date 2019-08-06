@@ -208,6 +208,16 @@ function hosting_git_pull_form_alter(&$form, &$form_state, $form_id) {
       $items[] = t('No requests ever detected.  If you add the trigger URL for a project to your git repo host, the IP will be logged and displayed here.');
     }
 
+    $items[] = l(t('View GitHub Webhook IP addresses (listed under "hooks")'), 'https://api.github.com/meta', array(
+      'attributes' => array(
+        '_target' => 'blank',
+      ),
+    ));
+    $items[] = l(t('View BitBucket Webhook IP addresses'), 'https://ip-ranges.atlassian.com', array(
+      'attributes' => array(
+        '_target' => 'blank',
+      ),
+    ));
     $items[] = t('Leave empty to allow access from any IP address.');
     $form['pullhook']['hosting_git_pull_webhook_ip_acl']['#description'] = theme('item_list', array('items' => $items));
 
