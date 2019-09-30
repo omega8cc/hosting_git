@@ -553,15 +553,19 @@ function provision_git_provision_drupal_create_directories_alter(&$mkdir, $url) 
  * @param $sync_path
  */
 function provision_git_provision_platform_sync_path_alter(&$sync_path) {
-  $repo_path = d()->platform->repo_path;
-  if ($repo_path != d()->root) {
-    $sync_path = $repo_path;
+  if (d()->type == 'site') {
+    $repo_path = d()->platform->repo_path;
+  }
+  elseif (d()->type == 'platform') {
+    $repo_path = d()->repo_path;
+  }
 
-    if (!file_exists($repo_path)) {
-      return drush_set_error('PROVISION_ERROR',  dt("Platform !path does not exist.", array(
-        '!path' => $repo_path,
-      )));
-    }
+  if (!file_exists($repo_path)) {
+    return drush_set_error('PROVISION_ERROR',  dt("Platform path '!path' does not exist.", array(
+      '!path' => $repo_path,
+    )));
+  } elseif ($repo_path != d()->root) {
+    $sync_path = $repo_path;
   }
 }
 
