@@ -429,7 +429,7 @@ function drush_provision_git_provision_verify_validate() {
     switch (d()->type) {
       case 'site':
         $context_type = 'Site';
-        $path_exists = provision_file()->exists(d()->site_path)->status();
+        $path = d()->site_path;
         // If there's an issue with the site git repo, we end up doing a
         // checkout on the platform, if we aren't careful.
         drush_set_option('force_repo_path_as_toplevel', TRUE);
@@ -438,15 +438,22 @@ function drush_provision_git_provision_verify_validate() {
       case 'platform':
       default:
         $context_type = 'Platform';
-        $path_exists = provision_file()->exists(d()->repo_path)->status();
+        $path = d()->repo_path;
         break;
     }
+
     // If the platform path doesn't exist, we will clone it.
     // Sites aren't verified on install, so we need to clone the repo in
     // drush_provision_git_provision_install_validate() instead.
-    if (!$path_exists) {
-      drush_log(dt("$context_type path does not exist. Invoking provision-git-clone."), 'ok');
+    if (!provision_file()->exists($path)->status()) {
+      drush_log(dt("%type path (%path) does not exist. Cloning codebase...", array(
+        '%type' => $context_type,
+        '%path' => $path,
+      )), 'success');
       provision_backend_invoke(d()->name, 'provision-git-clone');
+    }
+    else {
+      drush_log(dt("$context_type path ($path) already exist. Not cloning codebase."), 'notice');
     }
   }
   else {
