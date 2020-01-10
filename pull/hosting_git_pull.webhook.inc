@@ -6,6 +6,15 @@
  */
 
 /**
+ * Determine if the requesting server is allowed to post.
+ */
+function hosting_git_pull_webhook_ip_access() {
+  $allowed_ips = explode("\n", trim(variable_get('hosting_git_pull_webhook_ip_acl', HOSTING_GIT_WEBHOOK_DEFAULT_ALLOWED_IPS)));
+  array_filter(array_map('trim', $allowed_ips));
+  return hosting_git_pull_ip_match(ip_address(), $allowed_ips);
+}
+
+/**
  * URL callback that is invoked by git to create a code pull task.
  */
 function hosting_git_pull_callback($name, $hash) {
@@ -13,8 +22,6 @@ function hosting_git_pull_callback($name, $hash) {
   // Load the node & list of allowed IPs.
   $node = hosting_context_load($name);
   $name_clean = check_plain($name);
-  $allowed_ips = explode("\n", trim(variable_get('hosting_git_pull_webhook_ip_acl', HOSTING_GIT_WEBHOOK_DEFAULT_ALLOWED_IPS)));
-  array_filter(array_map('trim', $allowed_ips));
 
   // Make sure we got the node.
   if (!$node) {
@@ -30,7 +37,7 @@ function hosting_git_pull_callback($name, $hash) {
     $message = "Node $name_clean is NOT configured to use Pull Code URL callback!";
   }
   // Make sure the client's IP address is on the list.
-  elseif (!hosting_git_pull_ip_match(ip_address(), $allowed_ips)) {
+  elseif (!hosting_git_pull_webhook_ip_access()) {
     $message = ip_address() . " is not authorized to invoke a Pull Code request.";
     $status = HOSTING_GIT_WEBHOOK_STATUS_ACCESS_DENIED;
   }
