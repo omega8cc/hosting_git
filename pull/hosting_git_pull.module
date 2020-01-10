@@ -184,7 +184,7 @@ function hosting_git_pull_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'fieldset',
       '#title' => t('Pull on webhook'),
       '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
+      '#collapsed' => TRUE,
     );
 
     $form['pullhook']['hosting_git_pull_webhook_ip_acl'] = array(

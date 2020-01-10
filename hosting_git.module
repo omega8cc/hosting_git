@@ -78,6 +78,7 @@ function hosting_git_form_alter(&$form, &$form_state, $form_id) {
       '#tree' => TRUE,
       '#title' => t('Deploy from Git'),
       '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
       '#description' => $deploy_description,
       '#weight' => -1,
     );
