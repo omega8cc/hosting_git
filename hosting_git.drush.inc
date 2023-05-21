@@ -29,7 +29,7 @@ function drush_hosting_git_pre_hosting_task($task) {
   }
 
   if (!empty($task->task_args)) {
-    if ($task->task_args['reset_hard'] == TRUE) {
+    if (isset($task->task_args['reset_hard']) && $task->task_args['reset_hard'] == TRUE) {
       // Pass the option provision_git expects.
       $task->options['reset'] = TRUE;
     }
@@ -41,26 +41,26 @@ function drush_hosting_git_pre_hosting_task($task) {
       // Pass the option provision_git expects.
       $task->options['branch'] = 1;
     }
-    if ($task->task_args['checkout']) {
+    if (isset($task->task_args['checkout'])) {
       // Pass the option provision_git expects.
       $task->options['checkout'] = TRUE;
     }
-    if ($task->task_args['commit']) {
+    if (isset($task->task_args['commit'])) {
       $task->options['commit'] = $task->task_args['commit'];
     }
-    if ($task->task_args['message']) {
+    if (isset($task->task_args['message'])) {
       $task->options['message'] = $task->task_args['message'];
     }
-    if ($task->task_args['push']) {
+    if (isset($task->task_args['push'])) {
       $task->options['push'] = $task->task_args['push'];
     }
-    if ($task->task_args['name']) {
+    if (isset($task->task_args['name'])) {
       $task->options['name'] = $task->task_args['name'];
     }
-    if ($task->task_args['mail']) {
+    if (isset($task->task_args['mail'])) {
       $task->options['mail'] = $task->task_args['mail'];
     }
-    if ($task->task_args['files']) {
+    if (isset($task->task_args['files'])) {
       $task->options['files'] = $task->task_args['files'];
     }
   }
