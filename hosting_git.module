@@ -430,3 +430,31 @@ function _hosting_git_site_or_platform_enabled($node) {
     )
   );
 }
+
+/**
+ * Implements hook_node_validate().
+ *
+ * SECURITY: repo_url and git_ref propagate into shell command construction
+ * via the provision_git Drush hooks (git clone, git fetch, git add, etc.).
+ * Reject the unsafe-character set defined in DECISIONS Decision 002 of
+ * the aegir-shell-injection-audit project. Legitimate git URLs and refs
+ * never need these characters; rejecting them here surfaces bad input
+ * immediately in the UI rather than during task execution.
+ */
+function hosting_git_node_validate($node, $form) {
+  if (!in_array($node->type, array('site', 'platform'))) {
+    return;
+  }
+  if (empty($node->git)) {
+    return;
+  }
+  $unsafe = '/[\x00\x0A\x0D<>|&*?;!()\'"\\\\`${}]/';
+  foreach (array('repo_url', 'git_ref') as $field) {
+    if (!empty($node->git[$field]) && preg_match($unsafe, $node->git[$field])) {
+      form_set_error('git][' . $field, t(
+        '@field contains characters that are not allowed for security reasons: &lt; &gt; | &amp; * ? ; ! ( ) \' " \\ ` $ { }',
+        array('@field' => $field)
+      ));
+    }
+  }
+}

@@ -409,8 +409,13 @@ function drush_provision_git_add($path = '') {
   $target = d()->name;
 
   // Call git add.
-  // Seems to pass even if the git add failed
-  if (drush_shell_cd_and_exec($repo_path, "git add $path")) {
+  // Seems to pass even if the git add failed.
+  // SECURITY: $path is a positional Drush command argument reachable
+  // via the Hosting UI Git task or direct CLI invocation. The same
+  // file's clone path (drush_provision_git_clone) already uses
+  // escapeshellarg(trim($path)); apply the same pattern here.
+  // See DECISIONS.md Decision 002.
+  if (drush_shell_cd_and_exec($repo_path, 'git add ' . escapeshellarg($path))) {
     drush_log(dt('Git add: ' . $path), 'ok');
   }
 }
