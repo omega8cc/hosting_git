@@ -125,16 +125,15 @@ function hosting_git_form_alter(&$form, &$form_state, $form_id) {
         '#description' => 'Use a checkout task to change this value.',
       );
 
-      // Don't lose values. A value element's #default_value gives way to
-      // submitted input, so the stored values are fixed with #value.
+      // Don't lose values
       $form['git']['repo_url'] = array(
         '#type' => 'value',
-        '#value' => isset($node->git['repo_url']) ? $node->git['repo_url'] : '',
+        '#default_value' => isset($node->git['repo_url']) ? $node->git['repo_url'] : '',
       );
       // Don't lose values
       $form['git']['repo_path'] = array(
         '#type' => 'value',
-        '#value' => isset($node->git['repo_path']) ? $node->git['repo_path'] : '',
+        '#default_value' => isset($node->git['repo_path']) ? $node->git['repo_path'] : '',
       );
     }
 
@@ -253,7 +252,9 @@ function hosting_git_node_update($node) {
 
     // The edit form of a verified node sends the repository URL and path
     // only: keep the stored branch and docroot, never reset them to defaults.
-    if (!empty($node->nid)) {
+    // An unverified node's form sends its own values, and leaves the path out
+    // when the docroot is cleared: those stay the form's.
+    if (!empty($node->nid) && !empty($node->verified)) {
       $stored = db_query('SELECT repo_url, repo_path, repo_docroot, git_ref FROM {hosting_git} WHERE nid = :nid', array(':nid' => $node->nid))->fetchAssoc();
       if ($stored) {
         if (!isset($node->git)) {
