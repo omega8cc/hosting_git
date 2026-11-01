@@ -102,6 +102,14 @@ function hosting_git_drush_context_import($context, &$node) {
     $node->git['repo_url'] = $context->repo_url;
     $node->git['git_ref'] = $context->git_ref;
     $node->git['repo_path'] = $context->repo_path;
+    // The context carries no docroot: a platform whose root lies below its
+    // repository folder has it read from the two paths.
+    if ($context->type == 'platform' && empty($node->git['repo_docroot'])) {
+      $docroot = _hosting_git_docroot($context->repo_path, $context->root);
+      if ($docroot !== '') {
+        $node->git['repo_docroot'] = $docroot;
+      }
+    }
   }
 }
 

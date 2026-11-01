@@ -343,6 +343,22 @@ function _hosting_git_node_load_defaults(&$node) {
 }
 
 /**
+ * The docroot of a platform: the path of its root below its repository folder.
+ *
+ * hosting_git_node_submit() stores the platform path as the repository folder
+ * plus the docroot. The repository folder is kept as typed, the platform path
+ * normalized, so both are compared normalized, as the platform form does.
+ */
+function _hosting_git_docroot($repo_path, $root) {
+  $repo = hosting_path_normalize((string) $repo_path);
+  $root = hosting_path_normalize((string) $root);
+  if ($repo === '' || strpos($root, $repo . '/') !== 0) {
+    return '';
+  }
+  return substr($root, strlen($repo) + 1);
+}
+
+/**
  * Implements hook_node_delete().
  */
 function hosting_git_node_delete($node) {
