@@ -73,3 +73,27 @@ function hosting_git_update_7301 () {
     'default' => '',
   ));
 }
+
+/**
+ * Restore the docroot of Git platforms whose edit emptied it.
+ *
+ * Saving a verified Git platform's edit form stored an empty docroot. The
+ * platform path is the repository folder plus the docroot, so it is read back
+ * from the two paths.
+ */
+function hosting_git_update_7302() {
+  $restored = 0;
+  $rows = db_query("SELECT g.nid, g.repo_path, p.publish_path FROM {hosting_git} g INNER JOIN {node} n ON n.nid = g.nid INNER JOIN {hosting_platform} p ON p.vid = n.vid WHERE n.type = 'platform' AND g.repo_url <> '' AND g.repo_path <> '' AND (g.repo_docroot IS NULL OR g.repo_docroot = '')");
+  foreach ($rows as $row) {
+    $repo = rtrim($row->repo_path, '/');
+    $publish = rtrim($row->publish_path, '/');
+    if ($repo !== '' && strpos($publish, $repo . '/') === 0) {
+      db_update('hosting_git')
+        ->fields(array('repo_docroot' => substr($publish, strlen($repo) + 1)))
+        ->condition('nid', $row->nid)
+        ->execute();
+      $restored++;
+    }
+  }
+  return t('Restored the docroot of @count Git platform(s).', array('@count' => $restored));
+}
